@@ -1,1 +1,770 @@
-/
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחשבון ציונים למורים</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #eff6ff;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+    min-height: 100vh;
+    padding: 16px;
+    color: var(--gray-800);
+    direction: rtl;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding: 28px 20px 24px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    border-top: 4px solid var(--primary);
+  }
+  .header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+  }
+  .header p {
+    color: var(--gray-600);
+    font-size: 0.9rem;
+  }
+
+  /* Cards */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card-header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    flex: 1;
+  }
+  .card-body { padding: 20px; }
+
+  /* Step badge */
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #15803d; }
+
+  .btn-outline {
+    background: white;
+    color: var(--gray-700);
+    border: 1.5px solid var(--gray-300);
+  }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+
+  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+  .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 400px;
+    background: white;
+  }
+  th {
+    background: var(--gray-50);
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gray-600);
+    text-align: center;
+    border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--gray-100);
+    text-align: center;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* Inputs */
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--gray-800);
+    transition: border-color 0.15s;
+    background: white;
+    text-align: center;
+    direction: rtl;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  input.error-input { border-color: var(--danger) !important; }
+  input.valid-input { border-color: var(--success) !important; }
+
+  /* Percent badge */
+  .percent-cell { display: flex; align-items: center; gap: 6px; }
+  .percent-cell input { flex: 1; }
+  .pct-label { color: var(--gray-400); font-size: 0.85rem; flex-shrink: 0; }
+
+  /* Messages */
+  .msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 10px;
+  }
+  .msg-error { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+  .msg-success { background: var(--success-light); color: var(--success); border: 1px solid #bbf7d0; }
+  .msg-warning { background: var(--warning-light); color: var(--warning); border: 1px solid #fde68a; }
+  .msg-info { background: var(--primary-light); color: var(--primary); border: 1px solid #bfdbfe; }
+  .msg:empty { display: none; }
+
+  /* Final grade cell */
+  td.final-grade {
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 70px;
+  }
+  .grade-excellent { color: var(--success); }
+  .grade-good { color: var(--primary); }
+  .grade-ok { color: var(--warning); }
+  .grade-fail { color: var(--danger); }
+
+  /* Percent indicator */
+  .percent-indicator {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .pi-ok { background: var(--success-light); color: var(--success); border: 1px solid #bbf7d0; }
+  .pi-bad { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+
+  /* Upload area */
+  .upload-area {
+    border: 2px dashed var(--gray-300);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 14px;
+    background: var(--gray-50);
+  }
+  .upload-area:hover { border-color: var(--primary); background: var(--primary-light); }
+  .upload-area .icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-area p { color: var(--gray-600); font-size: 0.9rem; }
+  .upload-area strong { color: var(--primary); }
+  #fileInput { display: none; }
+
+  /* Delete row btn */
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .del-btn:hover { color: var(--danger); background: var(--danger-light); }
+
+  /* Section divider */
+  .divider { height: 1px; background: var(--gray-200); margin: 4px 0; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--primary-light);
+    border-top: 1px solid #bfdbfe;
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-size: 0.72rem; color: var(--gray-600); font-weight: 600; text-transform: uppercase; }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+
+  /* Tooltip */
+  .tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--gray-300);
+    color: var(--gray-700);
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: help;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--gray-800);
+    color: white;
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .header { padding: 20px 14px; }
+    .header h1 { font-size: 1.4rem; }
+    .card-body { padding: 14px; }
+    .btn { padding: 8px 12px; font-size: 0.82rem; }
+    table { min-width: 300px; }
+    th, td { padding: 7px 6px; font-size: 0.8rem; }
+    input[type="text"], input[type="number"] { font-size: 0.85rem; padding: 6px 7px; }
+    .stats-bar { padding: 10px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>📊 מחשבון ציונים למורים</h1>
+    <p>הגדר מבחנים, הכנס ציוני תלמידים וקבל ציון סופי משוקלל אוטומטית</p>
+  </div>
+
+  <!-- Import -->
+  <div class="card">
+    <div class="card-header">
+      <span class="step-badge">⬆</span>
+      <h2>טעינה מקובץ אקסל</h2>
+    </div>
+    <div class="card-body">
+      <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📂</div>
+        <p>לחץ כאן כדי לטעון קובץ אקסל שהורדת קודם</p>
+        <p><strong>(.xlsx)</strong></p>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx" onchange="importFromExcel(event)">
+      <div id="importMsg"></div>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="downloadTemplate()">⬇️ הורד תבנית אקסל ריקה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tests -->
+  <div class="card">
+    <div class="card-header">
+      <span class="step-badge">1</span>
+      <h2>הגדרת מבחנים ומשקלות</h2>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table id="testsTable">
+          <thead>
+            <tr>
+              <th>שם המבחן</th>
+              <th>אחוז משקל</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="testsBody"></tbody>
+        </table>
+      </div>
+      <div id="percentInfo"></div>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="addTest()">➕ הוסף מבחן</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Students -->
+  <div class="card">
+    <div class="card-header">
+      <span class="step-badge">2</span>
+      <h2>ציוני תלמידים</h2>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr id="studentsHeader">
+              <th>שם תלמיד</th>
+              <th>ציון סופי</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+      </div>
+      <div id="studentsStats" style="display:none">
+        <div class="stats-bar" id="statsBar"></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="addStudent()">➕ הוסף תלמיד</button>
+        <button class="btn btn-primary" onclick="calculateAll()">📊 חשב כל הציונים</button>
+        <button class="btn btn-success" onclick="exportToExcel()">⬇️ שמור לאקסל</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let tests = [];
+
+// ===================== TESTS =====================
+
+function addTest(name='', percent='') {
+  const tbody = document.getElementById('testsBody');
+  const idx = tbody.rows.length;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" placeholder="שם מבחן (למשל: בחינה סופית)" value="${escHtml(name)}" oninput="updateTests()" maxlength="40"></td>
+    <td>
+      <div class="percent-cell">
+        <input type="number" placeholder="0" min="0" max="100" step="0.1" value="${percent}" oninput="updateTests()">
+        <span class="pct-label">%</span>
+      </div>
+    </td>
+    <td><button class="del-btn" onclick="removeTest(this)" title="מחק מבחן">🗑</button></td>
+  `;
+  tbody.appendChild(tr);
+  updateTests();
+}
+
+function removeTest(btn) {
+  btn.closest('tr').remove();
+  updateTests();
+  rebuildStudentColumns();
+}
+
+function updateTests() {
+  tests = [];
+  const rows = document.getElementById('testsBody').rows;
+  let total = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const name = rows[i].cells[0].querySelector('input').value.trim();
+    const pct = parseFloat(rows[i].cells[1].querySelector('input').value) || 0;
+    tests.push({ name: name || `מבחן ${i+1}`, percent: pct });
+    total += pct;
+  }
+  const inf = document.getElementById('percentInfo');
+  if (tests.length === 0) { inf.innerHTML=''; return; }
+  const rounded = Math.round(total * 10) / 10;
+  if (rounded === 100) {
+    inf.innerHTML = `<div class="percent-indicator pi-ok">✅ סה"כ: 100% — תקין</div>`;
+  } else {
+    const diff = (100 - rounded).toFixed(1);
+    const verb = rounded < 100 ? `חסרים ${diff}%` : `עודף ${Math.abs(diff)}%`;
+    inf.innerHTML = `<div class="percent-indicator pi-bad">⚠️ סה"כ: ${rounded}% — ${verb}</div>`;
+  }
+  rebuildStudentColumns();
+  calculateAll();
+}
+
+// ===================== STUDENT COLUMNS =====================
+
+function rebuildStudentColumns() {
+  const header = document.getElementById('studentsHeader');
+  header.innerHTML = '<th style="min-width:120px">שם תלמיד</th>';
+  tests.forEach(t => {
+    header.innerHTML += `<th style="min-width:90px">${escHtml(t.name)}<br><small style="font-weight:400;color:var(--gray-400)">${t.percent}%</small></th>`;
+  });
+  header.innerHTML += '<th style="min-width:80px">ציון סופי</th><th></th>';
+
+  const rows = document.querySelectorAll('#studentsBody tr');
+  rows.forEach(row => {
+    const nameVal = row.cells[0]?.querySelector('input')?.value || '';
+    const oldScores = [];
+    for (let i = 1; i <= row.cells.length - 3; i++) {
+      oldScores.push(row.cells[i]?.querySelector('input')?.value || '');
+    }
+    row.innerHTML = buildStudentRowHTML(nameVal, oldScores);
+    attachStudentEvents(row);
+  });
+}
+
+function buildStudentRowHTML(name='', scores=[]) {
+  let html = `<td><input type="text" placeholder="שם תלמיד" value="${escHtml(name)}" maxlength="50" oninput="validateStudentName(this)"></td>`;
+  tests.forEach((_, i) => {
+    const val = scores[i] !== undefined ? scores[i] : '';
+    html += `<td><input type="number" min="0" max="100" step="0.5" placeholder="—" value="${val}" oninput="liveCalcRow(this)"></td>`;
+  });
+  html += `<td class="final-grade">—</td><td><button class="del-btn" onclick="removeStudent(this)" title="מחק תלמיד">🗑</button></td>`;
+  return html;
+}
+
+function attachStudentEvents(row) {}
+
+function addStudent(name='', scores=[]) {
+  const tbody = document.getElementById('studentsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = buildStudentRowHTML(name, scores);
+  tbody.appendChild(tr);
+  recalcRow(tr);
+}
+
+function removeStudent(btn) {
+  btn.closest('tr').remove();
+  updateStats();
+}
+
+// ===================== CALC =====================
+
+function liveCalcRow(input) {
+  const row = input.closest('tr');
+  validateGradeInput(input);
+  recalcRow(row);
+  updateStats();
+}
+
+function validateGradeInput(input) {
+  const val = parseFloat(input.value);
+  if (input.value === '') { input.classList.remove('error-input','valid-input'); return; }
+  if (isNaN(val) || val < 0 || val > 100) {
+    input.classList.add('error-input'); input.classList.remove('valid-input');
+  } else {
+    input.classList.add('valid-input'); input.classList.remove('error-input');
+  }
+}
+
+function validateStudentName(input) {
+  if (!input.value.trim()) {
+    input.classList.add('error-input'); input.classList.remove('valid-input');
+  } else {
+    input.classList.remove('error-input'); input.classList.add('valid-input');
+  }
+}
+
+function recalcRow(row) {
+  if (tests.length === 0) return;
+  const total = getRowTotal(row);
+  const finalCell = row.querySelector('.final-grade');
+  if (finalCell) {
+    if (total === null) {
+      finalCell.textContent = '—';
+      finalCell.className = 'final-grade';
+    } else {
+      finalCell.textContent = total.toFixed(1);
+      finalCell.className = 'final-grade ' + gradeClass(total);
+    }
+  }
+}
+
+function getRowTotal(row) {
+  let total = 0, hasAny = false;
+  for (let i = 0; i < tests.length; i++) {
+    const inp = row.cells[i+1]?.querySelector('input');
+    if (!inp) return null;
+    const val = inp.value.trim();
+    if (val === '') continue;
+    const grade = parseFloat(val);
+    if (isNaN(grade)) return null;
+    total += grade * (tests[i].percent / 100);
+    hasAny = true;
+  }
+  return hasAny ? total : null;
+}
+
+function calculateAll() {
+  document.querySelectorAll('#studentsBody tr').forEach(recalcRow);
+  updateStats();
+}
+
+function gradeClass(g) {
+  if (g >= 90) return 'grade-excellent';
+  if (g >= 75) return 'grade-good';
+  if (g >= 55) return 'grade-ok';
+  return 'grade-fail';
+}
+
+// ===================== STATS =====================
+
+function updateStats() {
+  const rows = document.querySelectorAll('#studentsBody tr');
+  const grades = [];
+  rows.forEach(row => {
+    const t = getRowTotal(row);
+    if (t !== null) grades.push(t);
+  });
+  const statsDiv = document.getElementById('studentsStats');
+  const bar = document.getElementById('statsBar');
+  if (grades.length === 0) { statsDiv.style.display='none'; return; }
+  const avg = grades.reduce((a,b)=>a+b,0)/grades.length;
+  const pass = grades.filter(g=>g>=55).length;
+  const max = Math.max(...grades), min = Math.min(...grades);
+  bar.innerHTML = `
+    <div class="stat-item"><span class="stat-label">תלמידים</span><span class="stat-value">${grades.length}</span></div>
+    <div class="stat-item"><span class="stat-label">ממוצע</span><span class="stat-value">${avg.toFixed(1)}</span></div>
+    <div class="stat-item"><span class="stat-label">עוברים (≥55)</span><span class="stat-value">${pass}/${grades.length}</span></div>
+    <div class="stat-item"><span class="stat-label">ציון גבוה</span><span class="stat-value">${max.toFixed(1)}</span></div>
+    <div class="stat-item"><span class="stat-label">ציון נמוך</span><span class="stat-value">${min.toFixed(1)}</span></div>
+  `;
+  statsDiv.style.display = '';
+}
+
+// ===================== EXCEL EXPORT =====================
+
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Grades
+  const header1 = ['שם תלמיד'];
+  tests.forEach(t => header1.push(`${t.name} (${t.percent}%)`));
+  header1.push('ציון סופי');
+  const data1 = [header1];
+  document.querySelectorAll('#studentsBody tr').forEach(row => {
+    const rowData = [row.cells[0]?.querySelector('input')?.value || ''];
+    for (let i = 0; i < tests.length; i++) {
+      const v = row.cells[i+1]?.querySelector('input')?.value;
+      rowData.push(v !== '' ? parseFloat(v) : '');
+    }
+    const final = row.querySelector('.final-grade')?.textContent;
+    rowData.push(final && final !== '—' ? parseFloat(final) : '');
+    data1.push(rowData);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(data1);
+  styleSheet(ws1, header1.length, data1.length);
+  XLSX.utils.book_append_sheet(wb, ws1, 'ציונים');
+
+  // Sheet 2: Tests config
+  const data2 = [['שם מבחן', 'אחוז משקל']];
+  tests.forEach(t => data2.push([t.name, t.percent]));
+  const ws2 = XLSX.utils.aoa_to_sheet(data2);
+  styleSheet(ws2, 2, data2.length);
+  XLSX.utils.book_append_sheet(wb, ws2, 'מבחנים');
+
+  XLSX.writeFile(wb, 'ציונים.xlsx');
+  showToast('✅ קובץ ציונים.xlsx הורד בהצלחה');
+}
+
+function downloadTemplate() {
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet([['שם תלמיד', 'מבחן 1 (50%)', 'מבחן 2 (50%)', 'ציון סופי']]);
+  styleSheet(ws1, 4, 1);
+  XLSX.utils.book_append_sheet(wb, ws1, 'ציונים');
+  const ws2 = XLSX.utils.aoa_to_sheet([['שם מבחן','אחוז משקל'],['מבחן 1', 50],['מבחן 2', 50]]);
+  styleSheet(ws2, 2, 3);
+  XLSX.utils.book_append_sheet(wb, ws2, 'מבחנים');
+  XLSX.writeFile(wb, 'תבנית_ציונים.xlsx');
+  showToast('📥 תבנית הורדה בהצלחה');
+}
+
+function styleSheet(ws, cols, rows) {
+  if (!ws['!cols']) ws['!cols'] = [];
+  for (let i = 0; i < cols; i++) ws['!cols'].push({ wch: i === 0 ? 22 : 16 });
+}
+
+// ===================== EXCEL IMPORT =====================
+
+function importFromExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const msg = document.getElementById('importMsg');
+
+      // Parse tests sheet
+      let importedTests = [];
+      if (wb.SheetNames.includes('מבחנים')) {
+        const ws = wb.Sheets['מבחנים'];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (row[0] && row[1] !== undefined) {
+            importedTests.push({ name: String(row[0]), percent: parseFloat(row[1]) || 0 });
+          }
+        }
+      }
+
+      // Parse grades sheet
+      let importedStudents = [];
+      if (wb.SheetNames.includes('ציונים')) {
+        const ws = wb.Sheets['ציונים'];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        const testCount = importedTests.length || (data[0]?.length - 2);
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row[0]) continue;
+          const scores = [];
+          for (let j = 1; j <= testCount; j++) {
+            scores.push(row[j] !== undefined ? String(row[j]) : '');
+          }
+          importedStudents.push({ name: String(row[0]), scores });
+        }
+      }
+
+      // Validation
+      if (importedTests.length === 0 && importedStudents.length === 0) {
+        msg.innerHTML = '<div class="msg msg-error">❌ לא נמצאו נתונים תקינים בקובץ. ודא שמשתמש בתבנית הנכונה.</div>';
+        return;
+      }
+
+      // Apply
+      document.getElementById('testsBody').innerHTML = '';
+      tests = [];
+      importedTests.forEach(t => addTest(t.name, t.percent));
+
+      document.getElementById('studentsBody').innerHTML = '';
+      importedStudents.forEach(s => addStudent(s.name, s.scores));
+
+      calculateAll();
+      msg.innerHTML = `<div class="msg msg-success">✅ נטען בהצלחה: ${importedTests.length} מבחנים, ${importedStudents.length} תלמידים</div>`;
+      showToast('📂 הקובץ נטען בהצלחה');
+    } catch(err) {
+      document.getElementById('importMsg').innerHTML = '<div class="msg msg-error">❌ שגיאה בקריאת הקובץ. ודא שזה קובץ xlsx תקין.</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
+// ===================== UTILS =====================
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===================== INIT =====================
+addTest('מבחן אמצע שנה', 30);
+addTest('בחינה סופית', 70);
+addStudent('ישראל ישראלי', ['85', '92']);
+addStudent('חנה כהן', ['76', '88']);
+calculateAll();
+</script>
+</body>
+</html>
